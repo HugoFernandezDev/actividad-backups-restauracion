@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Documentación Técnica: Backups y Restauración - SQL Server y MongoDB</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap');
+    
+    :root {
+      --primary: #0F172A;
+      --accent: #0284C7;
+      --accent-light: #E0F2FE;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+      --bg-card: #F8FAFC;
+      --text: #334155;
+      --text-dark: #0F172A;
+      --border: #E2E8F0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.65;
+      color: var(--text);
+      background-color: #FFFFFF;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      color: white;
+      padding: 36px 32px;
+      border-radius: 16px;
+      margin-bottom: 32px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    .badge-cloud { background: #0284C7; color: white; }
+    .badge-sql { background: #E11D48; color: white; margin-left: 6px; }
+    .badge-mongo { background: #16A34A; color: white; margin-left: 6px; }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin: 8px 0 14px 0;
+      color: #FFFFFF;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+      font-size: 13px;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      padding-top: 16px;
+    }
+
+    .meta-item strong {
+      color: #94A3B8;
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      color: var(--text-dark);
+      font-size: 20px;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 8px;
+      margin-top: 36px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h3 {
+      color: var(--primary);
+      font-size: 16px;
+      margin-top: 24px;
+    }
+
+    .deliverables-box {
+      background: var(--accent-light);
+      border: 1px solid #BAE6FD;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 24px 0;
+    }
+
+    .deliverables-box a {
+      color: #0369A1;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    .step-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin: 16px 0;
+    }
+
+    .step-card.sql { border-left-color: #E11D48; }
+    .step-card.mongo { border-left-color: #16A34A; }
+
+    .step-title {
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    pre, code {
+      font-family: 'Fira Code', Consolas, Monaco, monospace;
+    }
+
+    pre {
+      background: #0F172A;
+      color: #F8FAFC;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    code:not(pre code) {
+      background: #E2E8F0;
+      color: #0F172A;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      text-align: left;
+    }
+
+    th {
+      background: #F1F5F9;
+      color: var(--text-dark);
+      font-weight: 700;
+    }
+
+    tr:nth-child(even) {
+      background: #F8FAFC;
+    }
+
+    .highlight-box {
+      background: #FEF3C7;
+      border: 1px solid #FCD34D;
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      color: #92400E;
+      font-size: 14px;
+    }
+
+    .footer {
+      margin-top: 48px;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748B;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <span class="badge badge-cloud">Continuidad de Negocio</span>
+    <span class="badge badge-sql">SQL Server (SSMS)</span>
+    <span class="badge badge-mongo">MongoDB (Compass)</span>
+    <h1>Estrategias de Backup y Restauración de Base de Datos</h1>
+    <p style="margin: 0; color: #CBD5E1; font-size: 14px;">
+      Guía didáctica y procedimiento paso a paso para arquitecturas relacionales y no relacionales.
+    </p>
+
+    <div class="meta-grid">
+      <div class="meta-item">
+        <strong>Proyecto Aplicado</strong>
+        Agropacayales S.A.C.
+      </div>
+      <div class="meta-item">
+        <strong>Integrantes</strong>
+        Hugo Fernandez y Equipo de Proyecto
+      </div>
+      <div class="meta-item">
+        <strong>Bases de Datos</strong>
+        SQL Server + MongoDB
+      </div>
+      <div class="meta-item">
+        <strong>Objetivos de Continuidad</strong>
+        RPO &lt; 15 min | RTO &lt; 30 min
+      </div>
+    </div>
+  </div>
+
+  <div class="deliverables-box">
+    <h3 style="margin-top: 0; color: #0369A1;">📁 Enlaces de los Entregables</h3>
+    <ul>
+      <li><strong>Presentación en Google Slides:</strong> <a href="https://docs.google.com/presentation/d/1b7qHOjeMv2MpBvhKLj9aCpblSJ-Fj7tBMlBYF8awAq4/edit" target="_blank">Estrategias de Backup y Restauración (Diapositivas Oficiales)</a></li>
+      <li><strong>Enlace al Video Demostrativo (Google Drive):</strong> <code>[>>> PEGAR AQUÍ TU ENLACE PÚBLICO DE GOOGLE DRIVE <<<]</code></li>
+      <li><strong>Guion para Presentar las Diapositivas:</strong> Disponible en <code>GUION_PRESENTACION_SLIDES.md</code></li>
+      <li><strong>Guion para la Demostración en Video (SSMS + Compass):</strong> Disponible en <code>GUION_VIDEO_DEMOSTRACION.md</code></li>
+      <li><strong>Repositorio de Scripts:</strong> Local en <code>e:\Nueva carpeta (8)\actividad-backups-restauracion</code></li>
+    </ul>
+  </div>
+
+  <h2>1. Métricas Clave de Continuidad de Negocio</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;">
+    <div style="background: #F1F5F9; padding: 16px; border-radius: 8px;">
+      <h4 style="margin: 0 0 8px 0; color: #0284C7;">⏱️ RPO (Recovery Point Objective)</h4>
+      <p style="font-size: 13px; margin: 0;">
+        Pérdida máxima de datos aceptable medida en tiempo. Establecido en <strong>&lt; 15 minutos</strong> para Agropacayales S.A.C., garantizado por copias de logs transaccionales y respaldos programados.
+      </p>
+    </div>
+    <div style="background: #F1F5F9; padding: 16px; border-radius: 8px;">
+      <h4 style="margin: 0 0 8px 0; color: #0284C7;">⚡ RTO (Recovery Time Objective)</h4>
+      <p style="font-size: 13px; margin: 0;">
+        Tiempo máximo tolerable para recuperar la operatividad completa de la base de datos. Fijado en <strong>&lt; 30 minutos</strong> mediante procedimientos estandarizados de restauración con reemplazo.
+      </p>
+    </div>
+  </div>
+
+  <h2>2. Demostración en SQL Server Management Studio (SSMS)</h2>
+
+  <div class="step-card sql">
+    <div class="step-title">Paso 1: Elaboración del Backup Completo (Full)</div>
+    <ol style="font-size: 14px; padding-left: 20px;">
+      <li>En el Explorador de Objetos de SSMS, clic derecho en <code>agropacayales_db</code> ➔ <strong>Tasks</strong> ➔ <strong>Back Up...</strong></li>
+      <li>Tipo de Backup: <strong>Full</strong>. Destino: <code>Disk</code> ➔ Ruta: <code>C:\Backups\agropacayales_db_full.bak</code>.</li>
+      <li>En <strong>Backup Options</strong>, marcar <strong>Verify backup when finished</strong> para validar el checksum.</li>
+      <li>Clic en <strong>OK</strong>. El archivo se consolida con compresión y verificación.</li>
+    </ol>
+    <p><strong>Script T-SQL Automatizado:</strong></p>
+    <pre><code>BACKUP DATABASE [agropacayales_db]
+TO DISK = N'C:\Backups\agropacayales_db_full.bak'
+WITH FORMAT, INIT, NAME = N'agropacayales_db - Backup Completo', 
+     COMPRESSION, STATS = 10, CHECKSUM;</code></pre>
+  </div>
+
+  <div class="step-card sql">
+    <div class="step-title">Paso 2: Simulación de Contingencia / Pérdida Accidental</div>
+    <pre><code>USE agropacayales_db;
+-- Simulamos una actualización destructiva accidental
+UPDATE dbo.cultivos 
+SET nombre = 'ERROR_HUMANO_CORRUPTO', observaciones = 'Fallo operativo'
+WHERE id_cultivo IN (1, 2, 3);
+
+-- Comprobamos que el dato está alterado
+SELECT TOP 3 id_cultivo, id_parcela, nombre, tipo_cultivo FROM dbo.cultivos;</code></pre>
+  </div>
+
+  <div class="step-card sql">
+    <div class="step-title">Paso 3: Restauración de la Base de Datos (Restore Database)</div>
+    <ol style="font-size: 14px; padding-left: 20px;">
+      <li>Clic derecho en <strong>Databases</strong> ➔ <strong>Restore Database...</strong></li>
+      <li>Seleccionar <strong>Device</strong> ➔ Agregar archivo <code>C:\Backups\agropacayales_db_full.bak</code>.</li>
+      <li>En la pestaña <strong>Options</strong>:
+        <ul>
+          <li>Marcar <strong>Overwrite the existing database (WITH REPLACE)</strong>.</li>
+          <li>Marcar <strong>Close existing connections to destination database</strong>.</li>
+        </ul>
+      </li>
+      <li>Clic en <strong>OK</strong>. Base de datos restaurada al 100%.</li>
+    </ol>
+    <p><strong>Script T-SQL de Restauración con Reemplazo:</strong></p>
+    <pre><code>USE master;
+ALTER DATABASE [agropacayales_db] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+
+RESTORE DATABASE [agropacayales_db]
+FROM DISK = N'C:\Backups\agropacayales_db_full.bak'
+WITH FILE = 1, REPLACE, STATS = 10, RECOVERY;
+
+ALTER DATABASE [agropacayales_db] SET MULTI_USER;</code></pre>
+  </div>
+
+  <h2>3. Demostración en MongoDB Compass (No Relacional)</h2>
+
+  <div class="step-card mongo">
+    <div class="step-title">Paso 1: Exportación / Backup de Colección en MongoDB Compass</div>
+    <ol style="font-size: 14px; padding-left: 20px;">
+      <li>Conectarse a <code>mongodb://localhost:27017</code> en MongoDB Compass.</li>
+      <li>Entrar a la base de datos <code>agropacayales_db</code> ➔ Colección <code>supplies</code>.</li>
+      <li>En la barra superior, clic en <strong>Export Data</strong> ➔ <strong>Export the full collection</strong>.</li>
+      <li>Formato: <strong>JSON</strong> ➔ Archivo: <code>C:\Backups\supplies_backup.json</code> ➔ Clic en <strong>Export</strong>.</li>
+    </ol>
+    <div class="highlight-box">
+      <strong>Equivalente CLI para Producción:</strong><br>
+      <code>mongodump --db=agropacayales_db --collection=supplies --out=C:\Backups\mongo_dump</code>
+    </div>
+  </div>
+
+  <div class="step-card mongo">
+    <div class="step-title">Paso 2: Simulación de Desastre</div>
+    <p style="font-size: 14px;">
+      En MongoDB Compass, dentro de la colección <code>supplies</code>, ejecutar <strong>Drop Collection</strong> escribiendo el nombre <code>supplies</code> para confirmar. La colección desaparece por completo.
+    </p>
+  </div>
+
+  <div class="step-card mongo">
+    <div class="step-title">Paso 3: Restauración / Import Data en MongoDB Compass</div>
+    <ol style="font-size: 14px; padding-left: 20px;">
+      <li>Crear la colección <code>supplies</code> dentro de <code>agropacayales_db</code> si fue eliminada.</li>
+      <li>Clic en <strong>Add Data</strong> ➔ <strong>Import JSON or CSV file</strong>.</li>
+      <li>Seleccionar el archivo <code>C:\Backups\supplies_backup.json</code> ➔ Formato: <strong>JSON</strong>.</li>
+      <li>Clic en <strong>Import</strong>. Los documentos e identificadores <code>INS-...</code> se restauran de inmediato.</li>
+    </ol>
+    <div class="highlight-box">
+      <strong>Equivalente CLI para Producción:</strong><br>
+      <code>mongorestore --db=agropacayales_db --collection=supplies --drop C:\Backups\mongo_dump\agropacayales_db\supplies.bson</code>
+    </div>
+  </div>
+
+  <h2>4. Cuadro Comparativo Técnico</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Criterio</th>
+        <th>SQL Server (SSMS / .BAK)</th>
+        <th>MongoDB (Compass / JSON / BSON)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Tipo de Archivo</strong></td>
+        <td>Binario monolítico propietario (<code>.bak</code>).</td>
+        <td>Texto estructurado (<code>.json</code>) o binario (<code>.bson</code>).</td>
+      </tr>
+      <tr>
+        <td><strong>Nivel de Consistencia</strong></td>
+        <td>Transaccional ACID estricta a nivel de motor.</td>
+        <td>Consistencia por documento; eventual en réplicas.</td>
+      </tr>
+      <tr>
+        <td><strong>Point-in-Time Recovery</strong></td>
+        <td>Soporte nativo a segundo exacto vía Transaction Log.</td>
+        <td>Vía reproducción de <code>oplog</code> en replica set.</td>
+      </tr>
+      <tr>
+        <td><strong>Granularidad</strong></td>
+        <td>Base de datos completa, diferencial o Filegroups.</td>
+        <td>Por colección individual, filtros o base completa.</td>
+      </tr>
+      <tr>
+        <td><strong>Portabilidad</strong></td>
+        <td>Exclusivo para instancias Microsoft SQL Server.</td>
+        <td>Universal (compatible multiplataforma y entre nubes).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>5. Estrategia Empresarial 3-2-1</h2>
+  <div style="background: #F8FAFC; border: 1px solid var(--border); padding: 20px; border-radius: 8px;">
+    <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
+      <li><strong>3 Copias de los Datos:</strong> 1 primaria de producción + 2 respaldos independientes.</li>
+      <li><strong>2 Medios Distintos:</strong> Discos locales rápidos (SSD/NVMe) + Almacenamiento masivo (NAS/SAN).</li>
+      <li><strong>1 Copia Externa (Off-site):</strong> Almacenamiento en Cloud (AWS S3, Azure Blob o Google Cloud Storage) con políticas de inmutabilidad (Object Lock) contra Ransomware.</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    Agropacayales S.A.C. — Administración y Continuidad de Bases de Datos &copy; 2026. Todos los derechos reservados.
+  </div>
+
+</body>
+</html>

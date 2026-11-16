@@ -1,0 +1,30 @@
+# Archivos binarios de respaldo (no subir a GitHub)
+*.bak
+*.mdf
+*.ldf
+*.ndf
+*.dump
+*.bson
+
+# Respaldos de datos y volcados JSON
+/mongodb_dump/
+*.json.bak
+C:\Backups\
+
+# Diapositivas y videos pesados
+*.pdf
+*.pptx
+*.mp4
+*.avi
+*.mkv
+
+# Archivos de entorno y temporales del sistema
+.env
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
